@@ -1,32 +1,36 @@
 import os
 import time
 import serial
-
+import re
+import glob
 
 class my_serial1:
-    def __init__(self, speed=115200, timeout=1, max_ports=32):
+    def __init__(self, speed=115200, timeout=1, ):
         self.speed = speed
         self.timeout = timeout
-        self.max_ports = max_ports
 
         self.ser = None
         self.connected = False
         self.device = None
 
-    def _scan_ports(self, max_ports):
+    @staticmethod
+    def _sort_key(path):
+        match = re.search(r"(\d+)$", path)
+        if match:
+            return int(match.group(1))
+        return 0
+
+    def _scan_ports(self):
         """
         Ищет /dev/ttyUSB* и /dev/ttyACM*.
         """
         ports = []
-        prefixes = [
-            "/dev/ttyUSB",
-            "/dev/ttyACM",
-        ]
-        for i in range(max_ports):
-            for prefix in prefixes:
-                port = f"{prefix}{i}"
-                if os.path.exists(port):
-                    ports.append(port)
+
+        for pattern in ("/dev/ttyUSB*", "/dev/ttyACM*"):
+            found = glob.glob(pattern)
+            found.sort(key=self._sort_key)
+            ports.extend(found)
+
         return ports
 
     def connect(self, device=None, test=False):
@@ -36,7 +40,7 @@ class my_serial1:
         if device is not None:
             candidates = [device]
         else:
-            candidates = self._scan_ports(self.max_ports)
+            candidates = self._scan_ports()
 
         for port in candidates:
             print(f"Try {port}")
@@ -61,7 +65,7 @@ class my_serial1:
             self.connected = True
 
             if test:
-                if self.heartbeat():
+                if self.heartbeat(10):
                     return True
                 self.close()
                 continue
