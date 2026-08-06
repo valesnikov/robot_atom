@@ -18,8 +18,8 @@ inline button_t buttons_click() {
     static uint32_t timer;
     static bool flag = false;
 
-    float input = analogRead(pins::BUTTONS);
-    for (uint8_t i = 0; i <= config::buttons::NUM; i++) {
+    const float input = analogRead(pins::BUTTONS);
+    for (int i = 0; i <= config::buttons::NUM; i++) {
         if (abs(input - (config::buttons::MAX_LEVEL / config::buttons::NUM) * i) <=
             ((config::buttons::MAX_LEVEL * config::buttons::ACCURACY) / 100)) {
             if (i && !flag) {

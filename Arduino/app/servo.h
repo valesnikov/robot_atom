@@ -2,8 +2,6 @@
 
 #include <Adafruit_PWMServoDriver.h>
 
-#define PWM_I2C_ADDRESS 0x40
-
 extern Adafruit_PWMServoDriver pwm;
 
 struct Servo {

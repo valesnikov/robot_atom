@@ -1,10 +1,9 @@
-import os
 import time
 import serial
 import re
 import glob
 
-class my_serial1:
+class my_serial:
     def __init__(self, speed=115200, timeout=1, ):
         self.speed = speed
         self.timeout = timeout
@@ -143,18 +142,16 @@ class my_serial1:
             self.close()
             return False
 
-    def bytewrite(self, byte: int):
+    def bytewrite(self, byte):
         """
         Отправка одного байта. Если порт не подключён — команда игнорируется.
         """
         if not self.connected or self.ser is None:
             return False
 
-        if not isinstance(byte, int) or not (0 <= byte <= 255):
-            return False
 
         try:
-            self.ser.write(bytes([byte]))
+            self.ser.write(byte)
             return True
 
         except (serial.SerialException, OSError):

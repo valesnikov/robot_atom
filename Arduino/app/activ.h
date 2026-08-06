@@ -198,7 +198,6 @@ inline void mirror_rotate() {
     } else {
         // motors.IntWrite(0, 0);
     }
-    // tft_print(String(neck_x));
     servo::NECK.set(neck_buff);
     servo::BELT.set(neck_buff);
 
@@ -239,9 +238,8 @@ inline void punch() {
 }
 
 inline void update_mirror() {
-    static uint8_t buf[7];
+    static uint8_t buf[6];
     static size_t ix = 0;
-
     while (Serial.available()) {
         auto c = Serial.read();
         if (c == 0) {
@@ -250,17 +248,16 @@ inline void update_mirror() {
         } else if (c == 1) {
             ix = 0;
         } else {
-            if (ix < 7) {
+            if (ix < 6) {
                 buf[ix++] = c;
             }
-            if (ix >= 7) {
-                (void)buf[0];
-                mirror_status.rv_hand = utils::Byte2Val(buf[1], 0, 1);
-                mirror_status.lv_hand = utils::Byte2Val(buf[2], 0, 1);
-                mirror_status.rh_hand = utils::Byte2Val(buf[3], 0, 1);
-                mirror_status.lh_hand = utils::Byte2Val(buf[4], 0, 1);
-                mirror_status.angle = utils::Byte2Val(buf[5], -1, 1);
-                mirror_status.dist = utils::Byte2Val(buf[6], 0, 1);
+            if (ix >= 6) {
+                mirror_status.rv_hand = utils::Byte2Val(buf[0], 0, 1);
+                mirror_status.lv_hand = utils::Byte2Val(buf[1], 0, 1);
+                mirror_status.rh_hand = utils::Byte2Val(buf[2], 0, 1);
+                mirror_status.lh_hand = utils::Byte2Val(buf[3], 0, 1);
+                mirror_status.angle = utils::Byte2Val(buf[4], -1, 1);
+                mirror_status.dist = utils::Byte2Val(buf[5], 0, 1);
                 mirror_status.change_flag = true;
                 return;
             }

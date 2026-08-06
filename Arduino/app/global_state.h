@@ -5,10 +5,9 @@
 #include "servo.h"
 #include "utils.h"
 
-
 enum class State {
-    MIRROR,
     NONE,
+    MIRROR,
 };
 
 class StateManager {

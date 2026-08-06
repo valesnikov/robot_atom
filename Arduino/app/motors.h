@@ -81,8 +81,7 @@ class Motors {
         }
     }
 
-    void task() {
-        // timeout_handler();
+    void update() {
         int times = millis() - this->millis_buff;
         if (times >= this->_speed) {
             this->millis_buff = millis();

@@ -52,10 +52,9 @@ Motors motors(
     config::MOTORS_SPEED
 );
 
-Adafruit_PWMServoDriver pwm(PWM_I2C_ADDRESS);
+Adafruit_PWMServoDriver pwm(PCA9685_I2C_ADDRESS);
 
-UTFT
-    display(TFT01_22SP, pins::LED_MOSI, pins::LED_SCK, pins::LED_CS, pins::LED_RESET, pins::LED_DC);
+Adafruit_ILI9341 tft = Adafruit_ILI9341(pins::TFT_CS, pins::TFT_DC, pins::TFT_RESET);
 
 State StateManager::state = State::NONE;
 
@@ -64,20 +63,15 @@ void setup() {
     try(Serial.begin(config::SERIAL_SPEED));
     try(ir_setup());
     try(pwm.begin());
-    pwm.setPWMFreq(50);
+    pwm.setPWMFreq(60);
     mv::none();
     StateManager::change(State::NONE);
     tft_print("End of setup");
 }
 
-void button1_handler() {
-    delay(2000);
-    Serial.println("mirror");
-}
+void button1_handler() {}
 
-void button2_handler() {
-    Serial.println("fight");
-}
+void button2_handler() {}
 
 void button3_handler() {
     Serial.println("reset");
@@ -85,12 +79,12 @@ void button3_handler() {
 }
 
 void button4_handler() {
-    mv::punch();
+    tft_print("!!! MIRROR BUTTON");
+    Serial.println("mirror");
 }
 
 void button5_handler() {
-    Serial.println("screenshot");
-    tft_print("screenshot");
+    mv::punch();
 }
 
 void button6_handler() {
@@ -98,13 +92,9 @@ void button6_handler() {
 }
 
 void loop() {
-    // static long prev = millis();
-    // if(millis() - prev > 5000) {
-    //     tft_print("Alive");
-    //     prev = millis();
-    // }
+    static unsigned long prev = millis();
 
-    motors.task();
+    motors.update();
 
     buttons_task(
         button1_handler,
@@ -115,19 +105,24 @@ void loop() {
         button6_handler
     );
 
+    // if (millis() - prev > 2000) {
+    //     mv::punch();
+    //     prev = millis();
+    // }
+
     switch (StateManager::get()) {
-    case State::MIRROR: {
+    case State::MIRROR:
         mv::update_mirror();
+      
         if (mv::mirror_status.change_flag) {
             // mv::mirror_save_distance(); //раскомментировать чтобы держал дистанцию
             mv::mirror_rotate();
             mv::mirror_hands();
             mv::mirror_status.change_flag = false;
         }
-    } break;
-
-    case State::NONE: {
+        break;
+    case State::NONE:
         reader.update();
-    } break;
+        break;
     }
 }
