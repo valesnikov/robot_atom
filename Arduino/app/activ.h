@@ -167,42 +167,6 @@ inline void l_MAX() {
     motors.IntWrite(0, 0);
 }
 
-inline void tors() {
-    motors.IntWrite(128, -128);
-    for (float i = 0; i < 50; i++) {
-        servo::BELT.set((i / 50));
-        delay(7);
-    }
-    motors.IntWrite(0, 0);
-    delay(300);
-
-    motors.IntWrite(-128, 128);
-    for (float i = 50; i > (-50); i--) {
-        servo::BELT.set((i / 50));
-        delay(7);
-    }
-    motors.IntWrite(0, 0);
-    delay(300);
-
-    motors.IntWrite(128, -128);
-
-    for (float i = -50; i < 0; i++) {
-        servo::BELT.set((i / 50));
-        delay(7);
-    }
-    motors.IntWrite(0, 0);
-}
-
-inline void mtrs() {
-    motors.SoftWrite(128, 128);
-    delay(500);
-    motors.SoftWrite(-128, -128);
-    delay(1000);
-    motors.SoftWrite(128, 128);
-    delay(500);
-    motors.SoftWrite(0, 0);
-}
-
 inline void set_right() {
     servo::NECK.set(1);
     servo::BELT.set(1);
@@ -266,7 +230,7 @@ inline void punch() {
         l_aperkot,
         l_huk,
         r_aperkot,
-        // hjjjjjgr_MAX,
+        // l_MAX,
         l_aperkot,
         l_huk,
     };
@@ -274,78 +238,33 @@ inline void punch() {
     i = (i + 1) % (sizeof(mvs) / sizeof(mvs[0]));
 }
 
-inline void fight() {
-    if (Serial.available()) {
-        char b = Serial.read();
-        if (b == 0) {
+inline void update_mirror() {
+    static uint8_t buf[7];
+    static size_t ix = 0;
+
+    while (Serial.available()) {
+        auto c = Serial.read();
+        if (c == 0) {
+            StateManager::change(State::NONE);
             return;
+        } else if (c == 1) {
+            ix = 0;
+        } else {
+            if (ix < 7) {
+                buf[ix++] = c;
+            }
+            if (ix >= 7) {
+                (void)buf[0];
+                mirror_status.rv_hand = utils::Byte2Val(buf[1], 0, 1);
+                mirror_status.lv_hand = utils::Byte2Val(buf[2], 0, 1);
+                mirror_status.rh_hand = utils::Byte2Val(buf[3], 0, 1);
+                mirror_status.lh_hand = utils::Byte2Val(buf[4], 0, 1);
+                mirror_status.angle = utils::Byte2Val(buf[5], -1, 1);
+                mirror_status.dist = utils::Byte2Val(buf[6], 0, 1);
+                mirror_status.change_flag = true;
+                return;
+            }
         }
-        global_serial_buffer.add(b);
-    }
-
-    while (global_serial_buffer.len() > 0 && global_serial_buffer.check_top() != 1) {
-        global_serial_buffer.get();
-    }
-
-    if (global_serial_buffer.len() >= 3) {
-        global_serial_buffer.get();
-        fight_status.angle = utils::Byte2Val(global_serial_buffer.get(), -1, 1);
-        fight_status.dist = utils::Byte2Val(global_serial_buffer.get(), 0, 1);
-        fight_status.change_flag = true;
-    }
-}
-
-inline void fight_delay(unsigned long ms) {
-    unsigned long time = millis();
-    while (millis() - time < ms) {
-        fight();
-    }
-}
-
-inline void fight_rotate() {
-    int k;
-    static uint32_t timer = millis();
-
-    if (fight_status.dist > 0.1) {
-        k = -130;
-    } else {
-        k = 0;
-        if (millis() - timer > 3000) {
-            motors.IntWrite(0, 0);
-            punch();
-            fight_delay(500);
-            timer = millis();
-        }
-    }
-    static PID pid(4, 0, 0, -1, 1);
-    float neck_x = pid.compute(fight_status.angle, 0, 0.1);
-
-    motors.IntWrite(k + (neck_x * -100), k + (neck_x * 100));
-}
-
-inline void mirror() {
-    if (Serial.available()) {
-        char b = Serial.read();
-        if (b == 0) {
-            StateManager::change(State::FIGHT);
-            return;
-        }
-        global_serial_buffer.add(b);
-    }
-
-    while (global_serial_buffer.len() > 0 && global_serial_buffer.check_top() != 1) {
-        global_serial_buffer.get();
-    }
-
-    if (global_serial_buffer.len() >= 7) {
-        global_serial_buffer.get();
-        mirror_status.rv_hand = utils::Byte2Val(global_serial_buffer.get(), 0, 1);
-        mirror_status.lv_hand = utils::Byte2Val(global_serial_buffer.get(), 0, 1);
-        mirror_status.rh_hand = utils::Byte2Val(global_serial_buffer.get(), 0, 1);
-        mirror_status.lh_hand = utils::Byte2Val(global_serial_buffer.get(), 0, 1);
-        mirror_status.angle = utils::Byte2Val(global_serial_buffer.get(), -1, 1);
-        mirror_status.dist = utils::Byte2Val(global_serial_buffer.get(), 0, 1);
-        mirror_status.change_flag = true;
     }
 }
 

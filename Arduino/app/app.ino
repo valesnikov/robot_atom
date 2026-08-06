@@ -11,7 +11,7 @@
 #include "servo.h"
 #include "utils.h" //некоторые функции
 
-SerialReader reader(Serial, [](char *message, bool overflow) {
+void serialHandler(char *message, bool overflow) {
     auto res = utils::str::parseWord(message);
     if (strcmp(res.word, "heartbeat") == 0) {
         tft_print("heartbeat", 1, 220, 220, 255);
@@ -32,8 +32,6 @@ SerialReader reader(Serial, [](char *message, bool overflow) {
         motors.SetTarget(r, l);
     } else if (strcmp(res.word, "mirror") == 0) {
         StateManager::change(State::MIRROR);
-    } else if (strcmp(res.word, "fight") == 0) {
-        StateManager::change(State::FIGHT);
     } else if (strcmp(res.word, "flash") == 0) {
         utils::diodeColor(1024, 1024, 1024);
         delay(100);
@@ -42,7 +40,9 @@ SerialReader reader(Serial, [](char *message, bool overflow) {
         tft_print("!unknown command: ", 0, 255, 0, 0);
         tft_print(res.word, 1);
     }
-});
+}
+
+SerialReader reader(Serial, serialHandler);
 
 Motors motors(
     pins::MOTOR_RIGHT_FORWARD,
@@ -57,8 +57,6 @@ Adafruit_PWMServoDriver pwm(PWM_I2C_ADDRESS);
 UTFT
     display(TFT01_22SP, pins::LED_MOSI, pins::LED_SCK, pins::LED_CS, pins::LED_RESET, pins::LED_DC);
 
-static_queue<char, GLOBAL_SERIAL_BUFFER_SIZE> global_serial_buffer(error);
-
 State StateManager::state = State::NONE;
 
 void setup() {
@@ -66,8 +64,7 @@ void setup() {
     try(Serial.begin(config::SERIAL_SPEED));
     try(ir_setup());
     try(pwm.begin());
-    tft_print("!!!4");
-    pwm.setPWMFreq(60);
+    pwm.setPWMFreq(50);
     mv::none();
     StateManager::change(State::NONE);
     tft_print("End of setup");
@@ -101,12 +98,11 @@ void button6_handler() {
 }
 
 void loop() {
-    //static long prev = millis();
-    //if(millis() - prev > 5000) {
-    //    tft_print("Alive");
-    //    prev = millis();
-    //}
-
+    // static long prev = millis();
+    // if(millis() - prev > 5000) {
+    //     tft_print("Alive");
+    //     prev = millis();
+    // }
 
     motors.task();
 
@@ -121,20 +117,12 @@ void loop() {
 
     switch (StateManager::get()) {
     case State::MIRROR: {
-        mv::mirror();
+        mv::update_mirror();
         if (mv::mirror_status.change_flag) {
             // mv::mirror_save_distance(); //раскомментировать чтобы держал дистанцию
             mv::mirror_rotate();
             mv::mirror_hands();
             mv::mirror_status.change_flag = false;
-        }
-    } break;
-
-    case State::FIGHT: {
-        mv::fight();
-        if (mv::fight_status.change_flag) {
-            mv::fight_rotate();
-            mv::fight_status.change_flag = false;
         }
     } break;
 
