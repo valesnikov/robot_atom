@@ -1,28 +1,28 @@
 #pragma once
 
 #include <Adafruit_PWMServoDriver.h>
+#include <Arduino.h>
 
 extern Adafruit_PWMServoDriver pwm;
+
+#ifndef UINT16_MAX
+#  define UINT16_MAX UINT16_C(65535)
+#endif
 
 struct Servo {
     uint8_t addr;
     uint16_t min;
-    uint16_t mean;
+    uint16_t dflt;
     uint16_t max;
     bool invert;
 
-    // установка положения от -1 - минимум до 1 - максимум, 0 -стандартное положение
-    void set(float angle) const {
-        angle = max(-1, min(1, angle));
-        if (invert) {
-            angle = -angle;
-        }
-        int zn;
-        if (angle >= 0) {
-            zn = this->mean + angle * (this->max - this->mean);
-        } else {
-            zn = this->mean + angle * (this->mean - this->min);
-        }
-        pwm.setPWM(this->addr, 0, zn);
+    void set(uint16_t angle /* 0 - UINT16_MAX*/) const {
+        if (invert)
+            angle = UINT16_MAX - angle;
+        pwm.writeMicroseconds(this->addr, map(angle, 0, UINT16_MAX, min, max));
+    }
+
+    void reset() {
+        pwm.writeMicroseconds(addr, dflt);
     }
 };

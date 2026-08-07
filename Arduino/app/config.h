@@ -14,17 +14,13 @@ constexpr float DELAY = 500;  // ms
 } // namespace buttons
 
 namespace servo {
-
-constexpr Servo BELT = {0, 282, 352, 427, false};
-constexpr Servo RH = {3, 207, 377, 377, true};
-constexpr Servo RV = {4, 147, 227, 537, false};
-constexpr Servo LH = {1, 187, 347, 347, true};
-constexpr Servo LV = {2, 192, 452, 512, true};
-constexpr Servo NECK = {8, 200, 340, 530, false};
-constexpr Servo NECK_LIKE_BELT = {8, 290, 340, 410, false};
-
+constexpr Servo BELT = {0, 1147, 1432, 1737, false};
+constexpr Servo RH = {3, 842, 1534, 1534, true};
+constexpr Servo RV = {4, 598, 924, 2185, false};
+constexpr Servo LH = {1, 761, 1412, 1412, true};
+constexpr Servo LV = {2, 781, 1839, 2083, true};
+constexpr Servo NECK = {8, 814, 1383, 2157, false};
+constexpr Servo NECK_LIKE_BELT = {8, 1180, 1383, 1668, false};
 } // namespace servo
-
-
 
 } // namespace config
