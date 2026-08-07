@@ -3,13 +3,7 @@
 #include "servo.h"
 
 namespace config {
-constexpr int STRING_BUFFER_LEN = 20;
 constexpr unsigned long SERIAL_SPEED = 115200;
-constexpr int SERIAL_TIMEOUT = 50;
-constexpr int DISPLAY_KX = 8;
-constexpr int DISPLAY_KY = 15;
-constexpr int DISPLAY_MAX_X = 40;
-constexpr int DISPLAY_MAX_Y = 16;
 constexpr int MOTORS_SPEED = 2;
 
 namespace buttons {
@@ -30,4 +24,7 @@ constexpr Servo NECK = {8, 200, 340, 530, false};
 constexpr Servo NECK_LIKE_BELT = {8, 290, 340, 410, false};
 
 } // namespace servo
+
+
+
 } // namespace config

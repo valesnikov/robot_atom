@@ -19,13 +19,6 @@ inline struct { // состояние mirror
     bool rotate_flag = false;
 } mirror_status;
 
-inline struct { // состояние fight
-    float angle;
-    float dist;
-    bool change_flag = false;
-    bool save_distance_flag = false;
-} fight_status;
-
 using namespace config;
 
 inline void none() {

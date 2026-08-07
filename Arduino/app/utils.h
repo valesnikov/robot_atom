@@ -6,18 +6,9 @@
 #include "pins.h"
 #include "servo.h"
 
-/*
-Выыод выполнения фунции
-"try(func());" сначала напишет имя функции,
-потом попытается выполнить, и после выполнения
-напишет DONE
-*/
-#define try(func)                                        \
-    do {                                                 \
-        tft_print("!try '" #func "'", 0, 255, 128, 255); \
-        func;                                            \
-        tft_print(" DONE", 1, 128, 255, 128);            \
-    } while (0);
+
+#define STR_EQ_P(ram_str, flash_literal) \
+    (strcmp_P((ram_str), PSTR(flash_literal)) == 0)
 
 namespace utils {
 namespace str {

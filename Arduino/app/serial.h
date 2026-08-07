@@ -2,12 +2,8 @@
 
 #include <Arduino.h>
 
-
 class SerialReader {
   public:
-    SerialReader(HardwareSerial &serial)
-        : serial_(serial) {}
-
     SerialReader(HardwareSerial &serial, void (*cb)(char *, bool))
         : serial_(serial),
           callback_(cb) {}
@@ -34,16 +30,13 @@ class SerialReader {
         }
     }
 
-    void setCallback(void (*cb)(char *, bool)) {
-        callback_ = cb;
-    }
-
   private:
     static constexpr size_t BUF_SIZE = 64;
 
     HardwareSerial &serial_;
+    void (*const callback_)(char *, bool);
+
     char buf_[BUF_SIZE];
     size_t idx_ = 0;
     bool overflow_ = false;
-    void (*callback_)(char *, bool) = nullptr;
 };

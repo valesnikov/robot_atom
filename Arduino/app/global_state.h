@@ -1,7 +1,8 @@
 #pragma once
 
 #include "config.h"
-#include "display.h"
+#include "log.h"
+#include "motors.h"
 #include "servo.h"
 #include "utils.h"
 
@@ -23,15 +24,18 @@ class StateManager {
         config::servo::RV.set(0);
         config::servo::LH.set(0);
         config::servo::LV.set(0);
+        config::servo::BELT.set(0);
+        config::servo::NECK.set(0);
+        motors.IntWrite(0, 0);
 
         switch (newState) {
         case State::NONE:
             utils::diodeColor(0, 0, 512);
-            tft_print("#start wait");
+            LOG_I(F("start wait"));
             break;
         case State::MIRROR:
             utils::diodeColor(0, 512, 0);
-            tft_print("#start mirror");
+            LOG_I(F("start mirror"));
             break;
         }
         state = newState;

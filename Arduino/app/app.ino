@@ -1,10 +1,9 @@
 #include "activ.h" //движения робота
 #include "buttons.h"
 #include "config.h"
-#include "display.h"
-#include "error.h"        //обработчик ошибок
 #include "global_state.h" //переключение режимов робота
 #include "ir.h"           //ик пульт
+#include "log.h"
 #include "motors.h"
 #include "pins.h"   //номера пинов подключённых устройств
 #include "serial.h" //анализатор serial порта
@@ -13,32 +12,28 @@
 
 void serialHandler(char *message, bool overflow) {
     auto res = utils::str::parseWord(message);
-    if (strcmp(res.word, "heartbeat") == 0) {
-        tft_print("heartbeat", 1, 220, 220, 255);
+    if (STR_EQ_P(res.word, "heartbeat")) {
+        LOG_I(F("heartbeat"));
         Serial.println("heartbeat");
-    } else if (strcmp(res.word, "print") == 0) {
-        tft_print("Jetson: ", 0, 255, 220, 255);
-        tft_print(res.rest, 1);
-    } else if (strcmp(res.word, "motors") == 0) {
+    } else if (STR_EQ_P(res.word, "print")) {
+        LOG_I(F("Jetson: ") << res.rest);
+    } else if (STR_EQ_P(res.word, "motors")) {
         int r, l;
         auto rs = utils::str::parseWord(res.rest);
         auto ls = utils::str::parseWord(rs.rest);
-        tft_print(rs.word);
-        tft_print(ls.word);
         if (!utils::str::tryParseInt(rs.word, r) || !utils::str::tryParseInt(ls.word, l)) {
-            error("failed to parse motor command args");
+            LOG_E(F("failed to parse motor command args: ") << rs.word << F(", ") << ls.word);
             return;
         }
         motors.SetTarget(r, l);
-    } else if (strcmp(res.word, "mirror") == 0) {
+    } else if (STR_EQ_P(res.word, "mirror")) {
         StateManager::change(State::MIRROR);
-    } else if (strcmp(res.word, "flash") == 0) {
+    } else if (STR_EQ_P(res.word, "flash")) {
         utils::diodeColor(1024, 1024, 1024);
         delay(100);
         utils::diodeColor(0, 0, 512);
     } else {
-        tft_print("!unknown command: ", 0, 255, 0, 0);
-        tft_print(res.word, 1);
+        LOG_E(F("!unknown command: ") << res.word);
     }
 }
 
@@ -59,41 +54,50 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(pins::TFT_CS, pins::TFT_DC, pins::TFT_RE
 State StateManager::state = State::NONE;
 
 void setup() {
-    display_setup();
-    try(Serial.begin(config::SERIAL_SPEED));
-    try(ir_setup());
-    try(pwm.begin());
+    Logger::instance().init();
+    LOG_D(F("Logger initialized"));
+    Serial.begin(config::SERIAL_SPEED);
+    LOG_D(F("Serial initialized"));
+    ir_setup();
+    LOG_D(F("IR initialized"));
+    pwm.begin();
     pwm.setPWMFreq(60);
+    LOG_D(F("PWM initialized"));
     mv::none();
     StateManager::change(State::NONE);
-    tft_print("End of setup");
+    LOG_I(F("End of setup"));
 }
 
-void button1_handler() {}
+void button1_handler() {
+    LOG_T(F("Button 1 pressed"));
+}
 
-void button2_handler() {}
+void button2_handler() {
+    LOG_T(F("Button 2 pressed"));
+}
 
 void button3_handler() {
-    Serial.println("reset");
+    LOG_T(F("Button 3 pressed"));
+    Serial.println(F("reset"));
     StateManager::change(State::NONE);
 }
 
 void button4_handler() {
-    tft_print("!!! MIRROR BUTTON");
-    Serial.println("mirror");
+    LOG_T(F("Button 4 pressed"));
+    Serial.println(F("mirror"));
 }
 
 void button5_handler() {
+    LOG_T(F("Button 5 pressed"));
     mv::punch();
 }
 
 void button6_handler() {
-    Serial.println("heartbeat");
+    LOG_T(F("Button 6 pressed"));
+    Serial.println(F("heartbeat"));
 }
 
 void loop() {
-    static unsigned long prev = millis();
-
     motors.update();
 
     buttons_task(
@@ -105,15 +109,10 @@ void loop() {
         button6_handler
     );
 
-    // if (millis() - prev > 2000) {
-    //     mv::punch();
-    //     prev = millis();
-    // }
-
     switch (StateManager::get()) {
     case State::MIRROR:
         mv::update_mirror();
-      
+
         if (mv::mirror_status.change_flag) {
             // mv::mirror_save_distance(); //раскомментировать чтобы держал дистанцию
             mv::mirror_rotate();

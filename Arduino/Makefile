@@ -1,17 +1,22 @@
 SKETCH := app
-FQBN := arduino:avr:uno
+CORE := arduino:avr
+FQBN := $(CORE):uno
 PORT ?= /dev/ttyUSB0
 BAUDRATE := 115200
 BUILD_DIR := build
 LIBS_DIR := libs
 
-.PHONY: clangd build flash clean all monitor install-libs
+.PHONY: clangd setup build flash clean all monitor install-libs
 
 all: build
 
 clangd:
 	arduino-cli compile $(SKETCH) --fqbn $(FQBN) \
 		--only-compilation-database --build-path $(BUILD_DIR)
+
+setup:
+	arduino-cli core update-index
+	arduino-cli core install $(CORE)
 
 build:
 	arduino-cli compile $(SKETCH) --fqbn $(FQBN) \
