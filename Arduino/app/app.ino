@@ -53,6 +53,28 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(pins::TFT_CS, pins::TFT_DC, pins::TFT_RE
 
 State StateManager::state = State::NONE;
 
+Buttons buttons(
+    []() { LOG_T(F("Button 1 pressed")); },
+    []() { LOG_T(F("Button 2 pressed")); },
+    []() {
+        LOG_T(F("Button 3 pressed"));
+        Serial.println(F("reset"));
+        StateManager::change(State::NONE);
+    },
+    []() {
+        LOG_T(F("Button 4 pressed"));
+        Serial.println(F("mirror"));
+    },
+    []() {
+        LOG_T(F("Button 5 pressed"));
+        mv::punch();
+    },
+    []() {
+        LOG_T(F("Button 6 pressed"));
+        Serial.println(F("heartbeat"));
+    }
+);
+
 void setup() {
     Logger::instance().init();
     LOG_D(F("Logger initialized"));
@@ -63,51 +85,16 @@ void setup() {
     pwm.begin();
     pwm.setPWMFreq(60);
     LOG_D(F("PWM initialized"));
+    buttons.begin();
+    LOG_D(F("Buttons initialized"));
     mv::none();
     StateManager::change(State::NONE);
     LOG_I(F("End of setup"));
 }
 
-void button1_handler() {
-    LOG_T(F("Button 1 pressed"));
-}
-
-void button2_handler() {
-    LOG_T(F("Button 2 pressed"));
-}
-
-void button3_handler() {
-    LOG_T(F("Button 3 pressed"));
-    Serial.println(F("reset"));
-    StateManager::change(State::NONE);
-}
-
-void button4_handler() {
-    LOG_T(F("Button 4 pressed"));
-    Serial.println(F("mirror"));
-}
-
-void button5_handler() {
-    LOG_T(F("Button 5 pressed"));
-    mv::punch();
-}
-
-void button6_handler() {
-    LOG_T(F("Button 6 pressed"));
-    Serial.println(F("heartbeat"));
-}
-
 void loop() {
     motors.update();
-
-    buttons_task(
-        button1_handler,
-        button2_handler,
-        button3_handler,
-        button4_handler,
-        button5_handler,
-        button6_handler
-    );
+    buttons.update();
 
     switch (StateManager::get()) {
     case State::MIRROR:
