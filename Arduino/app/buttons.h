@@ -1,7 +1,6 @@
 #pragma once
 
 #include "config.h"
-#include "pins.h"
 #include <Arduino.h>
 
 class Buttons {
@@ -10,7 +9,7 @@ class Buttons {
         : handlers_{h0, h1, h2, h3, h4, h5} {}
 
     void begin() {
-        pinMode(pins::BUTTONS, INPUT);
+        pinMode(config::pins::BUTTONS, INPUT);
     }
 
     void update() {
@@ -32,13 +31,10 @@ class Buttons {
     };
 
     ButtonState getState() {
-        static uint32_t timer;
-        static bool flag = false;
-
-        const float input = analogRead(pins::BUTTONS);
+        const float input = analogRead(config::pins::BUTTONS);
         for (int i = 0; i <= config::buttons::NUM; i++) {
-            if (abs(input - (config::buttons::MAX_LEVEL / config::buttons::NUM) * i) <=
-                ((config::buttons::MAX_LEVEL * config::buttons::ACCURACY) / 100)) {
+            if (abs(input - ((float)config::buttons::MAX_LEVEL / config::buttons::NUM) * i) <=
+                (((float)config::buttons::MAX_LEVEL * config::buttons::ACCURACY) / 100)) {
                 if (i && !flag) {
                     flag = true;
                     timer = millis();
@@ -51,5 +47,7 @@ class Buttons {
         return NO_BUTTON;
     }
 
+    uint32_t timer;
+    bool flag = false;
     void (*const handlers_[6])(void);
 };

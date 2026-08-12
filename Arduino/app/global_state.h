@@ -4,7 +4,7 @@
 #include "log.h"
 #include "motors.h"
 #include "servo.h"
-#include "utils.h"
+#include "diode.h"
 
 enum class State {
     NONE,
@@ -30,11 +30,11 @@ class StateManager {
 
         switch (newState) {
         case State::NONE:
-            utils::diodeColor(0, 0, 512);
+            diode.set({0, 0, 512});
             LOG_I(F("start wait"));
             break;
         case State::MIRROR:
-            utils::diodeColor(0, 512, 0);
+            diode.set({0, 512, 0});
             LOG_I(F("start mirror"));
             break;
         }

@@ -1,10 +1,10 @@
 #include "activ.h" //движения робота
 #include "buttons.h"
 #include "config.h"
+#include "diode.h"
 #include "global_state.h" //переключение режимов робота
 #include "log.h"
 #include "motors.h"
-#include "pins.h"   //номера пинов подключённых устройств
 #include "serial.h" //анализатор serial порта
 #include "servo.h"
 #include "utils.h" //некоторые функции
@@ -28,9 +28,9 @@ void serialHandler(char *message, bool overflow) {
     } else if (STR_EQ_P(res.word, "mirror")) {
         StateManager::change(State::MIRROR);
     } else if (STR_EQ_P(res.word, "flash")) {
-        utils::diodeColor(1024, 1024, 1024);
+        auto old = diode.set({4096, 4096, 4096});
         delay(100);
-        utils::diodeColor(0, 0, 512);
+        diode.set(old);
     } else {
         LOG_E(F("!unknown command: ") << res.word);
     }
@@ -39,40 +39,56 @@ void serialHandler(char *message, bool overflow) {
 SerialReader reader(Serial, serialHandler);
 
 Motors motors(
-    pins::MOTOR_RIGHT_FORWARD,
-    pins::MOTOR_RIGHT_BACK,
-    pins::MOTOR_LEFT_FORWARD,
-    pins::MOTOR_LEFT_BACK,
+    config::pins::MOTOR_RIGHT_FORWARD,
+    config::pins::MOTOR_RIGHT_BACK,
+    config::pins::MOTOR_LEFT_FORWARD,
+    config::pins::MOTOR_LEFT_BACK,
     config::MOTORS_SPEED
 );
 
 Adafruit_PWMServoDriver pwm(PCA9685_I2C_ADDRESS);
 
-Adafruit_ILI9341 tft = Adafruit_ILI9341(pins::TFT_CS, pins::TFT_DC, pins::TFT_RESET);
+Adafruit_ILI9341 tft =
+    Adafruit_ILI9341(config::pins::TFT_CS, config::pins::TFT_DC, config::pins::TFT_RESET);
 
 State StateManager::state = State::NONE;
 
-Buttons buttons(
-    []() { LOG_T(F("Button 1 pressed")); },
-    []() { LOG_T(F("Button 2 pressed")); },
-    []() {
-        LOG_T(F("Button 3 pressed"));
-        Serial.println(F("reset"));
-        StateManager::change(State::NONE);
-    },
-    []() {
-        LOG_T(F("Button 4 pressed"));
-        Serial.println(F("mirror"));
-    },
-    []() {
-        LOG_T(F("Button 5 pressed"));
-        mv::punch();
-    },
-    []() {
-        LOG_T(F("Button 6 pressed"));
-        Serial.println(F("heartbeat"));
-    }
+Diode diode(
+    config::pwm_addrs::diode::RED,
+    config::pwm_addrs::diode::GREEN,
+    config::pwm_addrs::diode::BLUE
 );
+
+void onButton1() {
+    LOG_T(F("Button 1 pressed"));
+}
+
+void onButton2() {
+    LOG_T(F("Button 2 pressed"));
+}
+
+void onButton3() {
+    LOG_T(F("Button 3 pressed"));
+    Serial.println(F("reset"));
+    StateManager::change(State::NONE);
+}
+
+void onButton4() {
+    LOG_T(F("Button 4 pressed"));
+    Serial.println(F("mirror"));
+}
+
+void onButton5() {
+    LOG_T(F("Button 5 pressed"));
+    mv::punch();
+}
+
+void onButton6() {
+    LOG_T(F("Button 6 pressed"));
+    Serial.println(F("heartbeat"));
+}
+
+Buttons buttons(onButton1, onButton2, onButton3, onButton4, onButton5, onButton6);
 
 void setup() {
     Logger::instance().init();
@@ -82,6 +98,8 @@ void setup() {
     pwm.begin();
     pwm.setPWMFreq(60);
     LOG_D(F("PWM initialized"));
+    diode.begin();
+    LOG_D(F("Diode initialized"));
     buttons.begin();
     LOG_D(F("Buttons initialized"));
     mv::none();

@@ -3,6 +3,7 @@
 #include "config.h"
 #include "global_state.h"
 #include "motors.h"
+#include "pid.h"
 #include "servo.h"
 #include "utils.h"
 
