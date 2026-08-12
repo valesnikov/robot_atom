@@ -2,7 +2,6 @@
 #include "buttons.h"
 #include "config.h"
 #include "global_state.h" //переключение режимов робота
-#include "ir.h"           //ик пульт
 #include "log.h"
 #include "motors.h"
 #include "pins.h"   //номера пинов подключённых устройств
@@ -80,8 +79,6 @@ void setup() {
     LOG_D(F("Logger initialized"));
     Serial.begin(config::SERIAL_SPEED);
     LOG_D(F("Serial initialized"));
-    ir_setup();
-    LOG_D(F("IR initialized"));
     pwm.begin();
     pwm.setPWMFreq(60);
     LOG_D(F("PWM initialized"));
