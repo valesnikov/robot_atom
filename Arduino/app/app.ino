@@ -2,7 +2,7 @@
 #include "buttons.h"
 #include "config.h"
 #include "diode.h"
-#include "global_state.h" //переключение режимов робота
+#include "state.h" //переключение режимов робота
 #include "log.h"
 #include "motors.h"
 #include "serial.h" //анализатор serial порта
@@ -26,7 +26,7 @@ void serialHandler(char *message, bool overflow) {
         }
         motors.SetTarget(r, l);
     } else if (STR_EQ_P(res.word, "mirror")) {
-        StateManager::change(State::MIRROR);
+        StateManager::instance().change(State::MIRROR);
     } else if (STR_EQ_P(res.word, "flash")) {
         auto old = diode.set({4096, 4096, 4096});
         delay(100);
@@ -51,7 +51,7 @@ Adafruit_PWMServoDriver pwm(PCA9685_I2C_ADDRESS);
 Adafruit_ILI9341 tft =
     Adafruit_ILI9341(config::pins::TFT_CS, config::pins::TFT_DC, config::pins::TFT_RESET);
 
-State StateManager::state = State::NONE;
+
 
 Diode diode(
     config::pwm_addrs::diode::RED,
@@ -70,7 +70,7 @@ void onButton2() {
 void onButton3() {
     LOG_T(F("Button 3 pressed"));
     Serial.println(F("reset"));
-    StateManager::change(State::NONE);
+    StateManager::instance().change(State::NONE);
 }
 
 void onButton4() {
@@ -103,7 +103,7 @@ void setup() {
     buttons.begin();
     LOG_D(F("Buttons initialized"));
     mv::none();
-    StateManager::change(State::NONE);
+    StateManager::instance().change(State::NONE);
     LOG_I(F("End of setup"));
 }
 
@@ -111,7 +111,7 @@ void loop() {
     motors.update();
     buttons.update();
 
-    switch (StateManager::get()) {
+    switch (StateManager::instance().get()) {
     case State::MIRROR:
         mv::update_mirror();
 

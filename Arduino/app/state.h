@@ -1,10 +1,10 @@
 #pragma once
 
 #include "config.h"
+#include "diode.h"
 #include "log.h"
 #include "motors.h"
 #include "servo.h"
-#include "diode.h"
 
 enum class State {
     NONE,
@@ -13,11 +13,16 @@ enum class State {
 
 class StateManager {
   public:
-    static State get() {
+    static StateManager &instance() {
+        static StateManager instance;
+        return instance;
+    }
+
+    State get() {
         return state;
     }
 
-    static void change(State newState) {
+    void change(State newState) {
         if (state == newState)
             return;
         config::servo::RH.set(0);
@@ -41,6 +46,11 @@ class StateManager {
         state = newState;
     }
 
+    StateManager(const StateManager &) = delete;
+    StateManager &operator=(const StateManager &) = delete;
+
   private:
-    static State state;
+    StateManager() = default;
+
+    State state = State::NONE;
 };

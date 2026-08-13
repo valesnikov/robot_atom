@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "global_state.h"
+#include "state.h"
 #include "motors.h"
 #include "pid.h"
 #include "servo.h"
@@ -237,7 +237,7 @@ inline void update_mirror() {
     while (Serial.available()) {
         auto c = Serial.read();
         if (c == 0) {
-            StateManager::change(State::NONE);
+            StateManager::instance().change(State::NONE);
             return;
         } else if (c == 1) {
             ix = 0;
@@ -246,12 +246,12 @@ inline void update_mirror() {
                 buf[ix++] = c;
             }
             if (ix >= 6) {
-                mirror_status.rv_hand = utils::Byte2Val(buf[0], 0, 1);
-                mirror_status.lv_hand = utils::Byte2Val(buf[1], 0, 1);
-                mirror_status.rh_hand = utils::Byte2Val(buf[2], 0, 1);
-                mirror_status.lh_hand = utils::Byte2Val(buf[3], 0, 1);
-                mirror_status.angle = utils::Byte2Val(buf[4], -1, 1);
-                mirror_status.dist = utils::Byte2Val(buf[5], 0, 1);
+                mirror_status.rv_hand = utils::byte2Val(buf[0], 0, 1);
+                mirror_status.lv_hand = utils::byte2Val(buf[1], 0, 1);
+                mirror_status.rh_hand = utils::byte2Val(buf[2], 0, 1);
+                mirror_status.lh_hand = utils::byte2Val(buf[3], 0, 1);
+                mirror_status.angle = utils::byte2Val(buf[4], -1, 1);
+                mirror_status.dist = utils::byte2Val(buf[5], 0, 1);
                 mirror_status.change_flag = true;
                 return;
             }

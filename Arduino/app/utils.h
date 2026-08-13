@@ -94,7 +94,7 @@ Byte2Val(127,0,2) -> 0.99
 нужно для передачи движения рук, моторов, пояса и головы
 */
 
-constexpr inline float Byte2Val(byte val, float min_, float max_) {
+constexpr inline float byte2Val(byte val, float min_, float max_) {
     return (((float)(val - 2)) / 253) * (max_ - min_) + min_;
 }
 
