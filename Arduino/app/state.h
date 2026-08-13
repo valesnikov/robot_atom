@@ -1,6 +1,5 @@
 #pragma once
 
-#include "config.h"
 #include "diode.h"
 #include "log.h"
 #include "motors.h"
@@ -25,12 +24,12 @@ class StateManager {
     void change(State newState) {
         if (state == newState)
             return;
-        config::servo::RH.set(0);
-        config::servo::RV.set(0);
-        config::servo::LH.set(0);
-        config::servo::LV.set(0);
-        config::servo::BELT.set(0);
-        config::servo::NECK.set(0);
+        servoRh.set(0);
+        servoRv.set(0);
+        servoLh.set(0);
+        servoLv.set(0);
+        servoBelt.set(0);
+        servoNeck.set(0);
         motors.IntWrite(0, 0);
 
         switch (newState) {

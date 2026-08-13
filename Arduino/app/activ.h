@@ -1,137 +1,146 @@
 #pragma once
 
-#include "config.h"
-#include "state.h"
 #include "motors.h"
 #include "pid.h"
 #include "servo.h"
+#include "state.h"
 #include "utils.h"
 
 namespace mv {
 
-inline struct { // состояние mirror
-    float rv_hand;
-    float lv_hand;
-    float rh_hand;
-    float lh_hand;
-    float angle;
-    float dist;
-    bool change_flag = false;
-    bool rotate_flag = false;
-} mirror_status;
+class MirrorStatus {
+  public:
+    static MirrorStatus &instance() {
+        static MirrorStatus mirrorStatus;
+        return mirrorStatus;
+    }
 
-using namespace config;
+    float rvHand = 0;
+    float lvHand = 0;
+    float rhHand = 0;
+    float lhHand = 0;
+    float angle = 0;
+    float dist = 0.5;
+    bool changeFlag = false;
+    bool rotateFlag = false;
+
+    MirrorStatus(const MirrorStatus &) = delete;
+    MirrorStatus &operator=(const MirrorStatus &) = delete;
+
+  private:
+    MirrorStatus() = default;
+};
 
 inline void none() {
     motors.IntWrite(0, 0);
     motors.SetTarget(0, 0);
-    servo::BELT.set(0);
-    servo::RH.set(0);
-    servo::RV.set(0);
-    servo::LH.set(0);
-    servo::LV.set(0);
-    servo::NECK.set(0);
+    servoBelt.set(0);
+    servoRh.set(0);
+    servoRv.set(0);
+    servoLh.set(0);
+    servoLv.set(0);
+    servoNeck.set(0);
 }
 
 inline void r_huk() {
-    servo::BELT.set(-0.5);
-    servo::NECK_LIKE_BELT.set(0.5);
+    servoBelt.set(-0.5);
+    servoNeckLikeBelt.set(0.5);
 
-    servo::RH.set(0.85);
-    servo::RV.set(-1);
+    servoRh.set(0.85);
+    servoRv.set(-1);
 
     delay(200);
-    servo::RV.set(0.75);
-    servo::BELT.set(1);
-    servo::NECK_LIKE_BELT.set(-1);
+    servoRv.set(0.75);
+    servoBelt.set(1);
+    servoNeckLikeBelt.set(-1);
     delay(400);
-    servo::BELT.set(0);
-    servo::NECK_LIKE_BELT.set(0);
-    servo::RH.set(0);
-    servo::RV.set(0);
+    servoBelt.set(0);
+    servoNeckLikeBelt.set(0);
+    servoRh.set(0);
+    servoRv.set(0);
 }
 
 inline void l_huk() {
-    servo::BELT.set(0.5);
-    servo::NECK_LIKE_BELT.set(-0.5);
-    servo::LH.set(0.85);
-    servo::LV.set(-1);
+    servoBelt.set(0.5);
+    servoNeckLikeBelt.set(-0.5);
+    servoLh.set(0.85);
+    servoLv.set(-1);
 
     delay(200);
-    servo::LV.set(0.75);
-    servo::BELT.set(-1);
-    servo::NECK_LIKE_BELT.set(1);
+    servoLv.set(0.75);
+    servoBelt.set(-1);
+    servoNeckLikeBelt.set(1);
     delay(400);
-    servo::BELT.set(0);
-    servo::NECK_LIKE_BELT.set(0);
-    servo::LH.set(0);
-    servo::LV.set(0);
+    servoBelt.set(0);
+    servoNeckLikeBelt.set(0);
+    servoLh.set(0);
+    servoLv.set(0);
 }
 
 inline void r_aperkot() {
-    servo::RV.set(-1);
-    servo::BELT.set(-0.15);
-    servo::NECK_LIKE_BELT.set(0.15);
+    servoRv.set(-1);
+    servoBelt.set(-0.15);
+    servoNeckLikeBelt.set(0.15);
     delay(100);
-    servo::RV.set(1);
-    servo::BELT.set(0.6);
-    servo::NECK_LIKE_BELT.set(-0.6);
+    servoRv.set(1);
+    servoBelt.set(0.6);
+    servoNeckLikeBelt.set(-0.6);
     delay(400);
-    servo::RV.set(0);
-    servo::BELT.set(0);
-    servo::NECK_LIKE_BELT.set(0);
+    servoRv.set(0);
+    servoBelt.set(0);
+    servoNeckLikeBelt.set(0);
 }
 
 inline void l_aperkot() {
-    servo::LV.set(-1);
-    servo::BELT.set(0.15);
-    servo::NECK_LIKE_BELT.set(-0.15);
+    servoLv.set(-1);
+    servoBelt.set(0.15);
+    servoNeckLikeBelt.set(-0.15);
     delay(100);
-    servo::LV.set(1);
-    servo::BELT.set(-0.6);
-    servo::NECK_LIKE_BELT.set(0.6);
+    servoLv.set(1);
+    servoBelt.set(-0.6);
+    servoNeckLikeBelt.set(0.6);
     delay(400);
-    servo::LV.set(0);
-    servo::BELT.set(0);
-    servo::NECK_LIKE_BELT.set(0);
+    servoLv.set(0);
+    servoBelt.set(0);
+    servoNeckLikeBelt.set(0);
 }
 
 inline void meln() {
-    servo::RH.set(1);
-    servo::LH.set(1);
+    servoRh.set(1);
+    servoLh.set(1);
     delay(300);
-    servo::BELT.set(-1);
-    servo::NECK_LIKE_BELT.set(1);
+    servoBelt.set(-1);
+    servoNeckLikeBelt.set(1);
     delay(300);
-    servo::BELT.set(1);
-    servo::NECK_LIKE_BELT.set(-1);
+    servoBelt.set(1);
+    servoNeckLikeBelt.set(-1);
     delay(600);
-    servo::BELT.set(0);
-    servo::NECK_LIKE_BELT.set(0);
+    servoBelt.set(0);
+    servoNeckLikeBelt.set(0);
     delay(300);
-    servo::RH.set(0);
-    servo::LH.set(0);
+    servoRh.set(0);
+    servoLh.set(0);
 }
 
 inline void r_MAX() {
     motors.IntWrite(64, -64);
     for (float i = 0; i < 200; i++) {
-        servo::BELT.set(-(i / 200));
-        servo::RH.set(3 * (i / 200));
-        servo::RV.set(-(i / 200));
+        servoBelt.set(-(i / 200));
+        servoRh.set(3 * (i / 200));
+        servoRv.set(-(i / 200));
         delay(5);
     }
     motors.IntWrite(-255, 255);
-    servo::RV.set(1);
-    servo::BELT.set(1);
-    servo::NECK_LIKE_BELT.set(-1);
+    servoRv.set(1);
+    servoBelt.set(1);
+    servoNeckLikeBelt.set(-1);
     delay(400);
     motors.IntWrite(0, 0);
     delay(500);
-    servo::BELT.set(0);
-    servo::NECK_LIKE_BELT.set(0);
-    servo::RH.set(0);
-    servo::RV.set(0);
+    servoBelt.set(0);
+    servoNeckLikeBelt.set(0);
+    servoRh.set(0);
+    servoRv.set(0);
     motors.IntWrite(64, -64);
     delay(1100);
     motors.IntWrite(0, 0);
@@ -140,41 +149,41 @@ inline void r_MAX() {
 inline void l_MAX() {
     motors.IntWrite(-64, 64);
     for (float i = 0; i < 200; i++) {
-        servo::BELT.set((i / 200));
-        servo::LH.set(3 * (i / 200));
-        servo::LV.set(-(i / 200));
+        servoBelt.set((i / 200));
+        servoLh.set(3 * (i / 200));
+        servoLv.set(-(i / 200));
         delay(5);
     }
     motors.IntWrite(255, -255);
-    servo::LV.set(1);
-    servo::BELT.set(-1);
-    servo::NECK_LIKE_BELT.set(1);
+    servoLv.set(1);
+    servoBelt.set(-1);
+    servoNeckLikeBelt.set(1);
     delay(400);
     motors.IntWrite(0, 0);
     delay(500);
-    servo::BELT.set(0);
-    servo::NECK_LIKE_BELT.set(0);
-    servo::LH.set(0);
-    servo::LV.set(0);
+    servoBelt.set(0);
+    servoNeckLikeBelt.set(0);
+    servoLh.set(0);
+    servoLv.set(0);
     motors.IntWrite(-64, 64);
     delay(1100);
     motors.IntWrite(0, 0);
 }
 
 inline void set_right() {
-    servo::NECK.set(1);
-    servo::BELT.set(1);
+    servoNeck.set(1);
+    servoBelt.set(1);
 }
 
 inline void set_left() {
-    servo::NECK.set(-1);
-    servo::BELT.set(-1);
+    servoNeck.set(-1);
+    servoBelt.set(-1);
 }
 
 inline void mirror_save_distance() {
-    if (mirror_status.dist > 0.4) {
+    if (MirrorStatus::instance().dist > 0.4) {
         motors.IntWrite(-160, -160);
-    } else if (mirror_status.dist < 0.3) {
+    } else if (MirrorStatus::instance().dist < 0.3) {
         motors.IntWrite(160, 160);
     } else {
         motors.IntWrite(0, 0);
@@ -183,7 +192,7 @@ inline void mirror_save_distance() {
 
 inline void mirror_rotate() {
     static PID pid(0, 0.8, 0.01, -1, 1);
-    float neck_x = pid.compute(mirror_status.angle, 0, 0.1);
+    float neck_x = pid.compute(MirrorStatus::instance().angle, 0, 0.1);
     float neck_buff = constrain(neck_x, -1, 1);
     if (neck_x > 0.7) {
         // motors.IntWrite(-100, 100);
@@ -192,10 +201,10 @@ inline void mirror_rotate() {
     } else {
         // motors.IntWrite(0, 0);
     }
-    servo::NECK.set(neck_buff);
-    servo::BELT.set(neck_buff);
+    servoNeck.set(neck_buff);
+    servoBelt.set(neck_buff);
 
-    if (mirror_status.rotate_flag) {
+    if (MirrorStatus::instance().rotateFlag) {
         static PID pid_m(200, 1, 0, -100, 100);
         float motors_x = pid_m.compute(neck_buff, 0, 0.1);
         motors.IntWrite(motors_x, -motors_x);
@@ -203,16 +212,16 @@ inline void mirror_rotate() {
 }
 
 inline void mirror_hands() {
-    servo::RH.set(mirror_status.rh_hand * 2);
-    servo::LH.set(mirror_status.lh_hand * 2);
+    servoRh.set(MirrorStatus::instance().rhHand * 2);
+    servoLh.set(MirrorStatus::instance().lhHand * 2);
 
-    servo::RV.set(mirror_status.rv_hand);
-    servo::LV.set(mirror_status.lv_hand);
+    servoRv.set(MirrorStatus::instance().rvHand);
+    servoLv.set(MirrorStatus::instance().lvHand);
 
-    if (mirror_status.lh_hand * 160 + 20 >= 130) {
+    if (MirrorStatus::instance().lhHand * 160 + 20 >= 130) {
         // mirror_status.rotate_flag = 1;
     } else {
-        mirror_status.rotate_flag = 0;
+        MirrorStatus::instance().rotateFlag = 0;
     }
 }
 
@@ -246,13 +255,13 @@ inline void update_mirror() {
                 buf[ix++] = c;
             }
             if (ix >= 6) {
-                mirror_status.rv_hand = utils::byte2Val(buf[0], 0, 1);
-                mirror_status.lv_hand = utils::byte2Val(buf[1], 0, 1);
-                mirror_status.rh_hand = utils::byte2Val(buf[2], 0, 1);
-                mirror_status.lh_hand = utils::byte2Val(buf[3], 0, 1);
-                mirror_status.angle = utils::byte2Val(buf[4], -1, 1);
-                mirror_status.dist = utils::byte2Val(buf[5], 0, 1);
-                mirror_status.change_flag = true;
+                MirrorStatus::instance().rvHand = utils::byte2Val(buf[0], 0, 1);
+                MirrorStatus::instance().lvHand = utils::byte2Val(buf[1], 0, 1);
+                MirrorStatus::instance().rhHand = utils::byte2Val(buf[2], 0, 1);
+                MirrorStatus::instance().lhHand = utils::byte2Val(buf[3], 0, 1);
+                MirrorStatus::instance().angle = utils::byte2Val(buf[4], -1, 1);
+                MirrorStatus::instance().dist = utils::byte2Val(buf[5], 0, 1);
+                MirrorStatus::instance().changeFlag = true;
                 return;
             }
         }

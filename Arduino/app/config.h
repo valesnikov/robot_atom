@@ -16,14 +16,20 @@ constexpr int DELAY = 500;  // ms
 
 namespace pins {
 
+namespace tft {
+constexpr uint8_t DC = 8;
+constexpr uint8_t RESET = 7;
+constexpr uint8_t CS = 4;
+} // namespace tft
+
+namespace motors {
+constexpr uint8_t RIGHT_FORWARD = 5;
+constexpr uint8_t RIGHT_BACK = 6;
+constexpr uint8_t LEFT_FORWARD = 9;
+constexpr uint8_t LEFT_BACK = 10;
+} // namespace motors
+
 constexpr uint8_t BUTTONS = A2;
-constexpr uint8_t TFT_DC = 8;
-constexpr uint8_t TFT_RESET = 7;
-constexpr uint8_t TFT_CS = 4;
-constexpr uint8_t MOTOR_RIGHT_FORWARD = 5;
-constexpr uint8_t MOTOR_RIGHT_BACK = 6;
-constexpr uint8_t MOTOR_LEFT_FORWARD = 9;
-constexpr uint8_t MOTOR_LEFT_BACK = 10;
 constexpr uint8_t IR = 3;
 
 } // namespace pins
@@ -49,13 +55,13 @@ constexpr uint8_t BLUE = 7;
 
 namespace servo {
 
-constexpr Servo BELT = {pwm_addrs::servo::BELT, 282, 352, 427, false};
-constexpr Servo RH = {pwm_addrs::servo::RH, 207, 377, 377, true};
-constexpr Servo RV = {pwm_addrs::servo::RV, 147, 227, 537, false};
-constexpr Servo LH = {pwm_addrs::servo::LH, 187, 347, 347, true};
-constexpr Servo LV = {pwm_addrs::servo::LV, 192, 452, 512, true};
-constexpr Servo NECK = {pwm_addrs::servo::NECK, 200, 340, 530, false};
-constexpr Servo NECK_LIKE_BELT = {pwm_addrs::servo::NECK, 290, 340, 410, false};
+constexpr ServoBounds BELT = {282, 352, 427, false};
+constexpr ServoBounds RH = {207, 377, 377, true};
+constexpr ServoBounds RV = {147, 227, 537, false};
+constexpr ServoBounds LH = {187, 347, 347, true};
+constexpr ServoBounds LV = {192, 452, 512, true};
+constexpr ServoBounds NECK = {200, 340, 530, false};
+constexpr ServoBounds NECK_LIKE_BELT = {290, 340, 410, false};
 
 } // namespace servo
 

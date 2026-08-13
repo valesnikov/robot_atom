@@ -2,21 +2,23 @@
 #include "buttons.h"
 #include "config.h"
 #include "diode.h"
-#include "state.h" //переключение режимов робота
 #include "log.h"
 #include "motors.h"
 #include "serial.h" //анализатор serial порта
 #include "servo.h"
+#include "state.h" //переключение режимов робота
 #include "utils.h" //некоторые функции
 
-void serialHandler(char *message, bool overflow) {
+using utils::str::strEq;
+
+static void serialHandler(char *message, bool overflow) {
     auto res = utils::str::parseWord(message);
-    if (STR_EQ_P(res.word, "heartbeat")) {
+    if (strEq(res.word, F("heartbeat"))) {
         LOG_I(F("heartbeat"));
         Serial.println("heartbeat");
-    } else if (STR_EQ_P(res.word, "print")) {
+    } else if (strEq(res.word, F("print"))) {
         LOG_I(F("Jetson: ") << res.rest);
-    } else if (STR_EQ_P(res.word, "motors")) {
+    } else if (strEq(res.word, F("motors"))) {
         int r, l;
         auto rs = utils::str::parseWord(res.rest);
         auto ls = utils::str::parseWord(rs.rest);
@@ -25,9 +27,9 @@ void serialHandler(char *message, bool overflow) {
             return;
         }
         motors.SetTarget(r, l);
-    } else if (STR_EQ_P(res.word, "mirror")) {
+    } else if (strEq(res.word, F("mirror"))) {
         StateManager::instance().change(State::MIRROR);
-    } else if (STR_EQ_P(res.word, "flash")) {
+    } else if (strEq(res.word, F("flash"))) {
         auto old = diode.set({4096, 4096, 4096});
         delay(100);
         diode.set(old);
@@ -39,51 +41,58 @@ void serialHandler(char *message, bool overflow) {
 SerialReader reader(Serial, serialHandler);
 
 Motors motors(
-    config::pins::MOTOR_RIGHT_FORWARD,
-    config::pins::MOTOR_RIGHT_BACK,
-    config::pins::MOTOR_LEFT_FORWARD,
-    config::pins::MOTOR_LEFT_BACK,
+    config::pins::motors::RIGHT_FORWARD,
+    config::pins::motors::RIGHT_BACK,
+    config::pins::motors::LEFT_FORWARD,
+    config::pins::motors::LEFT_BACK,
     config::MOTORS_SPEED
 );
 
 Adafruit_PWMServoDriver pwm(PCA9685_I2C_ADDRESS);
 
 Adafruit_ILI9341 tft =
-    Adafruit_ILI9341(config::pins::TFT_CS, config::pins::TFT_DC, config::pins::TFT_RESET);
-
-
+    Adafruit_ILI9341(config::pins::tft::CS, config::pins::tft::DC, config::pins::tft::RESET);
 
 Diode diode(
+    pwm,
     config::pwm_addrs::diode::RED,
     config::pwm_addrs::diode::GREEN,
     config::pwm_addrs::diode::BLUE
 );
 
-void onButton1() {
+Servo servoBelt(pwm, config::pwm_addrs::servo::BELT, config::servo::BELT);
+Servo servoRh(pwm, config::pwm_addrs::servo::RH, config::servo::RH);
+Servo servoRv(pwm, config::pwm_addrs::servo::RV, config::servo::RV);
+Servo servoLh(pwm, config::pwm_addrs::servo::LH, config::servo::LH);
+Servo servoLv(pwm, config::pwm_addrs::servo::LV, config::servo::LV);
+Servo servoNeck(pwm, config::pwm_addrs::servo::NECK, config::servo::NECK);
+Servo servoNeckLikeBelt(pwm, config::pwm_addrs::servo::NECK, config::servo::NECK_LIKE_BELT);
+
+static void onButton1() {
     LOG_T(F("Button 1 pressed"));
 }
 
-void onButton2() {
+static void onButton2() {
     LOG_T(F("Button 2 pressed"));
 }
 
-void onButton3() {
+static void onButton3() {
     LOG_T(F("Button 3 pressed"));
     Serial.println(F("reset"));
     StateManager::instance().change(State::NONE);
 }
 
-void onButton4() {
+static void onButton4() {
     LOG_T(F("Button 4 pressed"));
     Serial.println(F("mirror"));
 }
 
-void onButton5() {
+static void onButton5() {
     LOG_T(F("Button 5 pressed"));
     mv::punch();
 }
 
-void onButton6() {
+static void onButton6() {
     LOG_T(F("Button 6 pressed"));
     Serial.println(F("heartbeat"));
 }
@@ -115,11 +124,11 @@ void loop() {
     case State::MIRROR:
         mv::update_mirror();
 
-        if (mv::mirror_status.change_flag) {
+        if (mv::MirrorStatus::instance().changeFlag) {
             // mv::mirror_save_distance(); //раскомментировать чтобы держал дистанцию
             mv::mirror_rotate();
             mv::mirror_hands();
-            mv::mirror_status.change_flag = false;
+            mv::MirrorStatus::instance().changeFlag = false;
         }
         break;
     case State::NONE:

@@ -3,10 +3,13 @@
 #include <Arduino.h>
 #include <ctype.h>
 
-#define STR_EQ_P(ram_str, flash_literal) (strcmp_P((ram_str), PSTR(flash_literal)) == 0)
-
 namespace utils {
 namespace str {
+
+inline bool strEq(const char *str1, const __FlashStringHelper *str2) {
+    return strcmp_P(str1, reinterpret_cast<const char *>(str2)) == 0;
+}
+
 inline char *skipSpaces(char *str) {
     while (*str != '\0' && isspace(static_cast<unsigned char>(*str))) {
         str++;

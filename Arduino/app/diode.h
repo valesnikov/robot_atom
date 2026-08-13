@@ -7,8 +7,6 @@ RGB от 0 до 4096
 
 #include "Adafruit_PWMServoDriver.h"
 
-extern Adafruit_PWMServoDriver pwm;
-
 class Diode {
   public:
     struct Color {
@@ -17,10 +15,11 @@ class Diode {
         int blue;
     };
 
-    Diode(uint8_t redAddr, uint8_t greenAddr, uint8_t blueAddr)
+    Diode(Adafruit_PWMServoDriver &pwm, uint8_t redAddr, uint8_t greenAddr, uint8_t blueAddr)
         : redAddr_(redAddr),
           greenAddr_(greenAddr),
-          blueAddr_(blueAddr) {}
+          blueAddr_(blueAddr),
+          pwm_(pwm) {}
 
     void begin() {
         setHW(color_);
@@ -35,11 +34,12 @@ class Diode {
 
   private:
     void setHW(Color color) {
-        pwm.setPWM(redAddr_, 0, color.red);
-        pwm.setPWM(greenAddr_, 0, color.green);
-        pwm.setPWM(blueAddr_, 0, color.blue);
+        pwm_.setPWM(redAddr_, 0, color.red);
+        pwm_.setPWM(greenAddr_, 0, color.green);
+        pwm_.setPWM(blueAddr_, 0, color.blue);
     }
 
+    Adafruit_PWMServoDriver &pwm_;
     Color color_ = {0, 0, 0};
     const uint8_t redAddr_, greenAddr_, blueAddr_;
 };
