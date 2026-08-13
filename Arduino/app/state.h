@@ -2,8 +2,7 @@
 
 #include "diode.h"
 #include "log.h"
-#include "motors.h"
-#include "servo.h"
+#include "activ.h"
 
 enum class State {
     NONE,
@@ -24,13 +23,8 @@ class StateManager {
     void change(State newState) {
         if (state == newState)
             return;
-        servoRh.set(0);
-        servoRv.set(0);
-        servoLh.set(0);
-        servoLv.set(0);
-        servoBelt.set(0);
-        servoNeck.set(0);
-        motors.IntWrite(0, 0);
+
+        mv::none();
 
         switch (newState) {
         case State::NONE:

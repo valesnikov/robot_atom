@@ -3,6 +3,7 @@
 #include "config.h"
 #include "diode.h"
 #include "log.h"
+#include "mirror.h"
 #include "motors.h"
 #include "serial.h" //анализатор serial порта
 #include "servo.h"
@@ -122,13 +123,13 @@ void loop() {
 
     switch (StateManager::instance().get()) {
     case State::MIRROR:
-        mv::update_mirror();
 
-        if (mv::MirrorStatus::instance().changeFlag) {
-            // mv::mirror_save_distance(); //раскомментировать чтобы держал дистанцию
-            mv::mirror_rotate();
-            mv::mirror_hands();
-            mv::MirrorStatus::instance().changeFlag = false;
+        Mirror::instance().update();
+
+        if (Mirror::instance().changeFlagCatch()) {
+            // Mirror::instance().saveDistance(); //раскомментировать чтобы держал дистанцию
+            Mirror::instance().rotate();
+            Mirror::instance().hands();
         }
         break;
     case State::NONE:
