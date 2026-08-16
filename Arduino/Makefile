@@ -4,6 +4,7 @@ FQBN := $(CORE):uno
 PORT ?= /dev/ttyUSB0
 BAUDRATE := 115200
 BUILD_DIR := build
+DOCS_DIR := docs
 LIBS_DIR := libs
 
 .PHONY: clangd setup build flash clean all monitor install-libs
@@ -32,6 +33,7 @@ monitor:
 
 clean:
 	rm -rf $(BUILD_DIR)
+	rm -rf $(DOCS_DIR)
 
 
 install-libs:
@@ -39,3 +41,6 @@ install-libs:
 	@for zip in $(LIBS_DIR)/*.zip; do \
 		arduino-cli lib install --zip-path "$$zip" || exit 1; \
 	done
+
+docs:
+	doxygen Doxyfile

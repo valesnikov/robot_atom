@@ -1,0 +1,9 @@
+PROJECT_NAME      = "Атом (Arduino)"
+OUTPUT_DIRECTORY  = docs 
+INPUT             = app README.md
+FILE_PATTERNS     = *.cpp *.c *.h *.hpp *.ino   # укажите нужные расширения
+RECURSIVE         = NO                # или YES, если нужно обходить поддиректории
+GENERATE_HTML     = YES
+GENERATE_LATEX    = NO
+EXTENSION_MAPPING = ino=C++
+USE_MDFILE_AS_MAINPAGE = README.md

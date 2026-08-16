@@ -1,25 +1,58 @@
+/**
+ * @file state.h
+ * @brief Переключение режимов работы робота.
+ *
+ * Реализует конечный автомат режимов робота: ожидание команд
+ * и режим зеркала (повторение движений оператора).
+ */
+
 #pragma once
 
 #include "diode.h"
 #include "log.h"
 #include "activ.h"
 
+/**
+ * @brief Режимы работы робота.
+ */
 enum class State {
-    NONE,
-    MIRROR,
+    NONE,   ///< Режим ожидания команд
+    MIRROR, ///< Режим зеркала
 };
 
+/**
+ * @brief Менеджер режимов (синглтон).
+ *
+ * При смене режима останавливает активные движения, меняет цвет
+ * светодиода и выводит сообщение в лог.
+ */
 class StateManager {
   public:
+    /**
+     * @brief Получить единственный экземпляр менеджера.
+     */
     static StateManager &instance() {
         static StateManager instance;
         return instance;
     }
 
+    /**
+     * @brief Получить текущий режим.
+     *
+     * @return текущий режим
+     */
     State get() {
         return state;
     }
 
+    /**
+     * @brief Переключить режим работы.
+     *
+     * При переходе останавливает все движения, устанавливает цвет
+     * светодиода и выводит сообщение в лог.
+     *
+     * @param newState новый режим
+     */
     void change(State newState) {
         if (state == newState)
             return;
@@ -45,5 +78,5 @@ class StateManager {
   private:
     StateManager() = default;
 
-    State state = State::NONE;
+    State state = State::NONE; ///< Текущий режим
 };
