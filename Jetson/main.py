@@ -1,14 +1,13 @@
 from pose_module import pose_module
-from my_serial import my_serial
+from SerialHandler import SerialHandler
 from Vector import Vector
 import time
 import cv2
 import math
-import numpy as np
 
 print("******************************")
 print("Библиотеки подключены")
-arduino = my_serial()
+arduino = SerialHandler()
 print("Наличие Ардуино:")
 print(arduino.connect(test=True))
 
@@ -21,52 +20,6 @@ def world_landmarks(marks, res):
     for c, dot in enumerate(dots):
         dots[c] = (centre - dot) * k
     return dots, visibility, k, centre[0]
-
-
-"""
-def view(wlms, vis):
-    res = (800, 600, 1)
-    blank = np.zeros(res, dtype='uint8')
-    centre = Vector([300, -250, 0])
-    k = 100/(wlms[11]-wlms[12]).length()
-    #for wlm in wlms:
-    #    pos = (wlm*k)+centre
-    #    cv2.circle(blank, (int(pos[0]), int(pos[1])), int(3+wlm[2]*2), 64, cv2.FILLED)
-
-
-    for c, wlm in enumerate(wlms):
-        wlm_pos = (int(-(k*wlm[0] - 300)), int(-(k*wlm[1] - 250)))
-        #print("!!!",wlm_pos,"!!!")
-        if vis[c] <= global_visibility:
-            cv2.circle(blank, wlm_pos, 4, 64, cv2.FILLED)
-        else:
-            cv2.circle(blank, wlm_pos, 5, 256, cv2.FILLED)
-
-        #cv2.putText(blank, str(c),(wlm_pos[0]+100, wlm_pos[1]+100), cv2.FONT_HERSHEY_SIMPLEX, 200, 5)
-
-    #print(str(wlms[15]))
-    cv2.circle(blank, (50,50), 8, 200, cv2.FILLED)
-    cv2.imshow('Pose', blank)
-    cv2.waitKey(1)
-"""
-
-
-def detect(wlms):
-    rects = ((12, 11, 13), (11, 12, 14))
-    for dots in rects:
-        A = [wlms[dots[1]][0], wlms[dots[1]][1]]
-        B = [wlms[dots[0]][0], wlms[dots[0]][1]]
-        C = [wlms[dots[2]][0], wlms[dots[2]][1]]
-        a = Vector(Vector(C) - Vector(B)).length()
-        b = Vector(Vector(A) - Vector(C)).length()
-        c = Vector(Vector(A) - Vector(B)).length()
-        cos = ((b**2) + (c**2) - (a**2)) / (2 * b * c)
-        angle = ((math.degrees(math.acos(cos)) - 90) / 90) * 255
-
-        if dots[1] == 11:
-            byt = bytes([min(max(0, int(angle)), 255)])
-            # print(byt)
-            # arduino.write(byt)
 
 
 def detect_angle(dots):
@@ -89,10 +42,6 @@ def toByte(val, min_, max_):
     return (
         round(min(max(val - min_, 0), max_ - min_) * (253.0 / (max_ - min_))) + 2
     ).to_bytes(1, "big")
-
-
-def on_change(value):
-    print(value)
 
 
 def main():
@@ -164,7 +113,7 @@ def main():
 
 dispW = 320
 dispH = 240
-i = 4
+i = 0
 
 while True:
     cap = cv2.VideoCapture(i)

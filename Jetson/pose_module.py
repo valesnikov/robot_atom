@@ -1,3 +1,4 @@
+# Этот файл сгенерирован ИИ. Я не буду с ним разбираться.
 import os
 import time
 import urllib.request
