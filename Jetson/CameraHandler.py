@@ -1,6 +1,9 @@
 """
-Модуль для управления видеокамерой.
-Камера — обязательный элемент (в отличие от serial).
+Модуль для управления видеокамерой через OpenCV.
+
+Автоматически сканирует устройства /dev/video*, подключается к первой
+рабочей камере и предоставляет методы для чтения кадров и получения
+параметров разрешения.
 """
 
 import cv2
@@ -9,7 +12,21 @@ import re
 
 
 class CameraHandler:
+    """
+    Менеджер видеокамеры. Сканирует /dev/video*, подключается и
+    предоставляет кадры через read().
+
+    Использование:
+        cam = CameraHandler()
+        if cam.connect():
+            success, frame = cam.read()
+    """
+
     def __init__(self, dispW=320, dispH=240, fps=30):
+        """
+        dispW, dispH — желаемое разрешение (может быть скорректировано камерой).
+        fps — желаемый FPS.
+        """
         self.dispW = dispW
         self.dispH = dispH
         self.fps = fps
@@ -18,17 +35,23 @@ class CameraHandler:
 
     @staticmethod
     def _sortKey(path):
+        """Извлекает числовой суффикс из пути /dev/videoN для сортировки."""
         match = re.search(r"(\d+)$", path)
         if match:
             return int(match.group(1))
         return 0
 
     def _scanCameras(self):
+        """Возвращает отсортированный список устройств /dev/video*."""
         devices = glob.glob("/dev/video*")
         devices.sort(key=self._sortKey)
         return devices
 
     def connect(self, device=None):
+        """
+        Подключается к указанному устройству или сканирует все доступные.
+        Возвращает True при успешном подключении.
+        """
         if device is not None:
             candidates = [device]
         else:
@@ -60,18 +83,22 @@ class CameraHandler:
         return False
 
     def read(self):
+        """Возвращает (success, frame) — очередной кадр с камеры."""
         assert self.cap is not None
         return self.cap.read()
 
     def getWidth(self):
+        """Возвращает актуальную ширину кадра в пикселях."""
         assert self.cap is not None
         return int(self.cap.get(3))
 
     def getHeight(self):
+        """Возвращает актуальную высоту кадра в пикселях."""
         assert self.cap is not None
         return int(self.cap.get(4))
 
     def close(self):
+        """Освобождает камеру."""
         if self.cap is not None:
             self.cap.release()
         self.cap = None

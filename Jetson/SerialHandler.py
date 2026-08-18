@@ -1,7 +1,9 @@
 """
 Модуль для управления последовательным портом (Serial).
-Предоставляет функциональность для сканирования портов, подключения к устройствам
-(например, Arduino), чтения/записи данных и проверки связи через heartbeat.
+
+Предоставляет функциональность для сканирования портов, подключения
+к устройствам (например Arduino), чтения/записи данных и проверки
+связи через heartbeat.
 """
 
 import time
@@ -9,8 +11,20 @@ import serial
 import re
 import glob
 
+
 class SerialHandler:
-    def __init__(self, speed=115200, timeout=1, ):
+    """
+    Менеджер последовательного порта.
+
+    Сканирует /dev/ttyUSB* и /dev/ttyACM*, подключается и предоставляет
+    методы для чтения/записи строк и байтов, а также для heartbeat-проверки.
+    """
+
+    def __init__(self, speed=115200, timeout=1):
+        """
+        speed   — скорость порта (бод).
+        timeout — таймаут чтения (сек).
+        """
         self.speed = speed
         self.timeout = timeout
 
@@ -20,6 +34,7 @@ class SerialHandler:
 
     @staticmethod
     def _sort_key(path):
+        """Извлекает числовой суффикс из пути порта для сортировки."""
         match = re.search(r"(\d+)$", path)
         if match:
             return int(match.group(1))
@@ -27,7 +42,8 @@ class SerialHandler:
 
     def _scanPorts(self):
         """
-        Ищет /dev/ttyUSB* и /dev/ttyACM*.
+        Ищет устройства /dev/ttyUSB* и /dev/ttyACM*.
+        Возвращает отсортированный список.
         """
         ports = []
 
@@ -39,6 +55,12 @@ class SerialHandler:
         return ports
 
     def connect(self, device=None, test=False):
+        """
+        Подключается к порту. Если device=None — сканирует автоматически.
+
+        Если test=True — после подключения выполняет heartbeat-проверку
+        и при неудаче закрывает порт.
+        """
         if self.connected and self.ser is not None:
             return True
 
@@ -84,6 +106,7 @@ class SerialHandler:
         return False
 
     def close(self):
+        """Закрывает порт и сбрасывает состояние."""
         if self.ser is not None:
             try:
                 self.ser.close()
@@ -96,7 +119,10 @@ class SerialHandler:
 
     def heartbeat(self, Wtime=1):
         """
-        Проверка связи. Ардуино должна отвечать строкой heartbeat.
+        Проверка связи с устройством.
+
+        Отправляет "heartbeat" и ждёт ответ "heartbeat" в течение Wtime секунд.
+        Возвращает True при успехе.
         """
         if not self.connected or self.ser is None:
             return False
@@ -116,7 +142,8 @@ class SerialHandler:
 
     def read(self):
         """
-        Читает строку. Если порт не подключён — возвращает пустую строку.
+        Читает строку из порта.
+        Возвращает пустую строку, если порт не подключён или данных нет.
         """
         if not self.connected or self.ser is None:
             return ""
@@ -135,7 +162,8 @@ class SerialHandler:
 
     def write(self, data):
         """
-        Отправка строки. Если порт не подключён — команда игнорируется.
+        Отправляет строку в порт.
+        Игнорирует команду, если порт не подключён.
         """
         if not self.connected or self.ser is None:
             return False
@@ -150,11 +178,11 @@ class SerialHandler:
 
     def bytewrite(self, byte):
         """
-        Отправка одного байта. Если порт не подключён — команда игнорируется.
+        Отправляет один байт в порт.
+        Игнорирует команду, если порт не подключён.
         """
         if not self.connected or self.ser is None:
             return False
-
 
         try:
             self.ser.write(byte)
@@ -166,7 +194,7 @@ class SerialHandler:
 
     def available(self):
         """
-        Количество байт в буфере приёма.
+        Возвращает количество байт в буфере приёма.
         Если порт не подключён — возвращает 0.
         """
         if not self.connected or self.ser is None:

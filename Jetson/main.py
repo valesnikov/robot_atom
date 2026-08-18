@@ -1,3 +1,10 @@
+"""
+Главный модуль управления роботом через компьютерное зрение.
+
+Запускает цикл захвата видео с камеры, детекции позы человека через MediaPipe
+и отправку управляющих команд на Arduino по Serial.
+"""
+
 from SerialHandler import SerialHandler
 from CameraHandler import CameraHandler
 import time
@@ -5,13 +12,10 @@ import cv2
 import math
 import numpy as np
 
-# На Jetson (mediapipe 0.8.5-cuda102) нет модуля mediapipe.tasks,
-# поэтому пробуем новый модуль, а при неудаче — старый Jetson-модуль.
-# try:
-#     from PoseModule import PoseModule
-# except (ImportError, RuntimeError):
-#     from PoseModuleJetson import PoseModule
-from PoseModuleJetson import PoseModule
+try:
+    from PoseModule import PoseModule
+except (ImportError, RuntimeError):
+    from PoseModuleJetson import PoseModule
 
 
 print("******************************")
@@ -19,6 +23,15 @@ print("Библиотеки подключены")
 
 
 def worldLandmarks(marks, res):
+    """
+    Преобразует мировые координаты landmarks в нормализованный массив
+    с центром в середине корпуса и фиксированным масштабом.
+
+    Возвращает (dots, k, centre):
+        dots   — массив (33, 3) с координатами, центрированными относительно торса
+        k      — коэффициент масштаба (0.26 / расстояние между плечами)
+        centre — x-координата центра торса
+    """
     w = float(res[0])
     h = float(res[1])
     aspect = h / w if w != 0.0 else 1.0
@@ -36,6 +49,11 @@ def worldLandmarks(marks, res):
 
 
 def detectAngle(points):
+    """
+    Вычисляет угол между тремя точками через теорему косинусов.
+    points: [p0, p1, p2], где p1 — вершина угла.
+    Возвращает угол в градусах (0–180).
+    """
     a = np.linalg.norm(points[0] - points[2])
     b = np.linalg.norm(points[0] - points[1])
     c = np.linalg.norm(points[2] - points[1])
@@ -50,6 +68,11 @@ def detectAngle(points):
 
 
 def toByte(val, min_, max_):
+    """
+    Преобразует float из диапазона [min_, max_] в byte [2..255].
+    2 = минимум, 255 = максимум.
+    Используется для упаковки данных перед отправкой на Arduino.
+    """
     val = float(val)
     min_ = float(min_)
     max_ = float(max_)
@@ -65,18 +88,37 @@ def toByte(val, min_, max_):
 
 
 class RobotApp:
+    """
+    Главный класс приложения: связывает камеру, детектор позы и Arduino.
+
+    В цикле получает кадры, детектирует позу, слушает команды с Arduino
+    (mirror, reset, screenshot) и при необходимости отправляет данные позы.
+    """
+
     def __init__(self, arduino, camera, detector):
+        """
+        arduino  : SerialHandler
+        camera   : CameraHandler
+        detector : PoseModule
+        """
         self.arduino = arduino
         self.camera = camera
         self.detector = detector
         self.switch = 0
 
     def _serialCommand(self):
+        """Читает команду с Arduino, если есть данные в буфере."""
         if self.arduino.available():
             return self.arduino.read()
         return None
 
     def _handleCommand(self, inp, success, img, curTime):
+        """
+        Обрабатывает команды с Arduino:
+          mirror     — активирует режим отправки позы
+          reset      — деактивирует режим отправки позы
+          screenshot — сохраняет кадр в screenshots/
+        """
         if inp == "mirror":
             self.switch = 1
             print("send mirror")
@@ -93,6 +135,18 @@ class RobotApp:
                 time.sleep(0.5)
 
     def _sendPose(self, wlms, k, centre):
+        """
+        Упаковывает параметры позы и отправляет на Arduino (7 байт):
+          [0] = 1 (маркер)
+          [1] = высота правой руки относительно плеча
+          [2] = высота левой руки относительно плеча
+          [3] = угол правого плеча
+          [4] = угол левого плеча
+          [5] = центр торса (x)
+          [6] = масштаб / 5
+
+        Если оба угла > 160° — автоматический выход из mirror.
+        """
         angleR = detectAngle([wlms[13], wlms[11], wlms[23]])
         angleL = detectAngle([wlms[14], wlms[12], wlms[24]])
 
@@ -109,6 +163,10 @@ class RobotApp:
             self.switch = 0
 
     def run(self):
+        """
+        Основной цикл: захват кадра → детекция позы → обработка команд →
+        отправка данных на Arduino (если mirror) → отображение с FPS.
+        """
         prevTime = time.time()
 
         while True:
@@ -151,6 +209,7 @@ class RobotApp:
 
 
 def main():
+    """Точка входа: инициализация SerialHandler, CameraHandler, PoseModule и запуск RobotApp."""
     arduino = SerialHandler()
     print("Наличие Ардуино:")
     print(arduino.connect(test=True))
