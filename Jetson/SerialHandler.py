@@ -25,7 +25,7 @@ class SerialHandler:
             return int(match.group(1))
         return 0
 
-    def _scan_ports(self):
+    def _scanPorts(self):
         """
         Ищет /dev/ttyUSB* и /dev/ttyACM*.
         """
@@ -45,7 +45,7 @@ class SerialHandler:
         if device is not None:
             candidates = [device]
         else:
-            candidates = self._scan_ports()
+            candidates = self._scanPorts()
 
         for port in candidates:
             print(f"Try {port}")

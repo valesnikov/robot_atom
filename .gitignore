@@ -1,8 +1,0 @@
-**/logs/
-**/build/
-**/__pycache__/
-**/__init__.py
-**/.vscode/
-**/.idea/
-*.save
-*.tmp

@@ -1,145 +1,170 @@
-from pose_module import pose_module
 from SerialHandler import SerialHandler
-from Vector import Vector
+from CameraHandler import CameraHandler
 import time
 import cv2
 import math
+import numpy as np
+
+# На Jetson (mediapipe 0.8.5-cuda102) нет модуля mediapipe.tasks,
+# поэтому пробуем новый модуль, а при неудаче — старый Jetson-модуль.
+# try:
+#     from PoseModule import PoseModule
+# except (ImportError, RuntimeError):
+#     from PoseModuleJetson import PoseModule
+from PoseModuleJetson import PoseModule
+
 
 print("******************************")
 print("Библиотеки подключены")
-arduino = SerialHandler()
-print("Наличие Ардуино:")
-print(arduino.connect(test=True))
 
-def world_landmarks(marks, res):
-    dots = [Vector([i.x, i.y * (res[1] / res[0]), i.z / 2]) for i in marks]
-    visibility = [i.visibility for i in marks]
-    centre = (dots[11] + dots[12] + dots[23] + dots[24]) / 4
-    k = (dots[11] - dots[12]).length()
-    k = 0.26 / (k)
+
+def worldLandmarks(marks, res):
+    w = float(res[0])
+    h = float(res[1])
+    aspect = h / w if w != 0.0 else 1.0
+
+    dots = [np.array([m.x, m.y * aspect, m.z / 2.0], dtype=float) for m in marks]
+    centre = (dots[11] + dots[12] + dots[23] + dots[24]) / 4.0
+
+    base = np.linalg.norm(dots[11] - dots[12])
+    k = 0.26 / base if base != 0.0 else 0.0
+
     for c, dot in enumerate(dots):
         dots[c] = (centre - dot) * k
-    return dots, visibility, k, centre[0]
+
+    return dots, k, float(centre[0])
 
 
-def detect_angle(dots):
-    a = (dots[0] - dots[2]).length()
-    b = (dots[0] - dots[1]).length()
-    c = (dots[2] - dots[1]).length()
-    cos = ((b**2) + (c**2) - (a**2)) / (2 * b * c)
-    angle = math.degrees(math.acos(cos))
-    return angle
+def detectAngle(points):
+    a = np.linalg.norm(points[0] - points[2])
+    b = np.linalg.norm(points[0] - points[1])
+    c = np.linalg.norm(points[2] - points[1])
 
+    if b == 0.0 or c == 0.0:
+        return 0.0
 
-def serial_monitor():
-    if arduino.available():
-        return arduino.read()
-    else:
-        return None
+    cos = (b * b + c * c - a * a) / (2.0 * b * c)
+    cos = max(-1.0, min(1.0, float(cos)))
+
+    return math.degrees(math.acos(cos))
 
 
 def toByte(val, min_, max_):
-    return (
-        round(min(max(val - min_, 0), max_ - min_) * (253.0 / (max_ - min_))) + 2
-    ).to_bytes(1, "big")
+    val = float(val)
+    min_ = float(min_)
+    max_ = float(max_)
+
+    span = max_ - min_
+    if span == 0.0:
+        return (2).to_bytes(1, "big")
+
+    limited = min(max(val - min_, 0.0), span)
+    byte_val = int(round(limited * (253.0 / span))) + 2
+
+    return byte_val.to_bytes(1, "big")
+
+
+class RobotApp:
+    def __init__(self, arduino, camera, detector):
+        self.arduino = arduino
+        self.camera = camera
+        self.detector = detector
+        self.switch = 0
+
+    def _serialCommand(self):
+        if self.arduino.available():
+            return self.arduino.read()
+        return None
+
+    def _handleCommand(self, inp, success, img, curTime):
+        if inp == "mirror":
+            self.switch = 1
+            print("send mirror")
+            self.arduino.write("mirror\n")
+            time.sleep(0.5)
+
+        elif inp == "reset":
+            self.switch = 0
+
+        elif inp == "screenshot":
+            if success:
+                cv2.imwrite("screenshots/{0}.jpg".format(curTime), img)
+                self.arduino.write("flash\n")
+                time.sleep(0.5)
+
+    def _sendPose(self, wlms, k, centre):
+        angleR = detectAngle([wlms[13], wlms[11], wlms[23]])
+        angleL = detectAngle([wlms[14], wlms[12], wlms[24]])
+
+        self.arduino.bytewrite((1).to_bytes(1, "big"))
+        self.arduino.bytewrite(toByte(wlms[15][2] - wlms[11][2], 0, 1))
+        self.arduino.bytewrite(toByte(wlms[16][2] - wlms[12][2], 0, 1))
+        self.arduino.bytewrite(toByte(angleR, 20, 180))
+        self.arduino.bytewrite(toByte(angleL, 20, 180))
+        self.arduino.bytewrite(toByte(centre, 0, 1))
+        self.arduino.bytewrite(toByte(k / 5.0, 0, 1))
+
+        if angleR > 160 and angleL > 160:
+            self.arduino.bytewrite((0).to_bytes(1, "big"))
+            self.switch = 0
+
+    def run(self):
+        prevTime = time.time()
+
+        while True:
+            curTime = time.time()
+            success, img = self.camera.read()
+
+            inp = self._serialCommand()
+            self._handleCommand(inp, success, img, curTime)
+
+            if not success:
+                continue
+
+            img, lms = self.detector.process(img)
+
+            if lms:
+                wlms, k, centre = worldLandmarks(
+                    lms, (self.camera.getWidth(), self.camera.getHeight())
+                )
+
+                if self.switch == 1:
+                    self._sendPose(wlms, k, centre)
+
+            dt = curTime - prevTime
+            frameTime = round(1.0 / dt, 1) if dt > 0.0 else 0.0
+
+            cv2.putText(
+                img,
+                str(frameTime) + "fps",
+                (40, 50),
+                cv2.FONT_HERSHEY_PLAIN,
+                1.5,
+                (0, 0, 255),
+                2,
+            )
+
+            cv2.imshow("Image", img)
+            cv2.waitKey(1)
+
+            prevTime = curTime
 
 
 def main():
-    global cap
-    global switch
-    global final_sign
-    prev_time = time.time()
-    while True:
-        cur_time = time.time()
-        success, img = cap.read()
-        inp = serial_monitor()
-        if inp == "mirror":
-            switch = 1
-            print("send mirror")
-            arduino.write("mirror\n")
-            time.sleep(0.5)
-        if inp == "reset":
-            switch = 0
-        if inp == "screenshot":
-            cv2.imwrite(f"screenshots/{cur_time}.jpg", img)
-            arduino.write("flash\n")
-            time.sleep(0.5)
+    arduino = SerialHandler()
+    print("Наличие Ардуино:")
+    print(arduino.connect(test=True))
 
-        success, img = cap.read()
-        if not success:
-            continue
+    camera = CameraHandler()
+    if not camera.connect():
+        return
 
-        print(switch)
+    time.sleep(1)
 
-        img = detector.process(img)
-        lms = detector.get_landmarks()
-        if lms:
-            wlms, visible, k, centre = world_landmarks(
-                lms, (int(cap.get(3)), int(cap.get(4)))
-            )
-            if switch == 1:
-                angle_r = detect_angle([wlms[13], wlms[11], wlms[23]])
-                angle_l = detect_angle([wlms[14], wlms[12], wlms[24]])
-                min_ = 20
-                max_ = 180
-                # print((round(min(max(angle_r-min_, 0), max_-min_)*(253.0/(max_-min_)))+2))
-                # print(wlms[16][2]-wlms[12][2], wlms[15][2]-wlms[11][2])
-                arduino.bytewrite((1).to_bytes(1, "big"))
-                arduino.bytewrite(toByte(wlms[15][2] - wlms[11][2], 0, 1))
-                arduino.bytewrite(toByte(wlms[16][2] - wlms[12][2], 0, 1))
-                arduino.bytewrite(toByte(angle_r, 20, 180))
-                arduino.bytewrite(toByte(angle_l, 20, 180))
-                arduino.bytewrite(toByte(centre, 0, 1))
-                arduino.bytewrite(toByte(k / 5, 0, 1))
-                if angle_r > 160 and angle_l > 160 and 0:
-                    arduino.bytewrite((0).to_bytes(1, "big"))
-                    switch = 0
-                # detect(wlms)
-
-        frame_time = round(1 / (cur_time - prev_time), 1)
-        cv2.putText(
-            img,
-            str(frame_time) + "fps",
-            (40, 50),
-            cv2.FONT_HERSHEY_PLAIN,
-            1.5,
-            (0, 0, 255),
-            2,
-        )
-        cv2.imshow("Image", img)
-        cv2.waitKey(1)
-        prev_time = cur_time
+    detector = PoseModule()
+    app = RobotApp(arduino, camera, detector)
+    app.run()
 
 
-dispW = 320
-dispH = 240
-i = 0
-
-while True:
-    cap = cv2.VideoCapture(i)
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, dispW)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, dispH)
-    cap.set(5, 30)
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-    width, height = int(cap.get(3)), int(cap.get(4))
-    fps = int(cap.get(5))
-
-    if width == 0 or height == 0 or fps == 0:
-        print("Попытка подключиться к камере ", i)
-        i = i + 1
-        if i > 10:
-            print("Камера не найдена")
-            exit()
-    else:
-        print(f"Camera resolution: {width}x{height}, FPS: {fps}")
-        break
-
-time.sleep(1)
-detector = pose_module()
-switch = 0
-final_sign = ""
-
-global_visibility = 0.5
-
-main()
+if __name__ == "__main__":
+    main()

@@ -1,1 +1,2 @@
-pose_landmarker_*
+/venv/
+/__pycache__/
